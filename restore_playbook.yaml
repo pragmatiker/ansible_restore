@@ -1,0 +1,62 @@
+---
+- name: Install Packages
+  hosts: localhost
+
+  tasks:
+    - name: "Install Packages"
+      become: yes
+      ansible.builtin.package:
+        name:
+          - chromium
+          - curl
+          - keepassxc
+          - network-manager-openvpn
+          - restic
+          - scdaemon
+          - vim
+          - webext-keepassxc-browser
+          - yubikey-manager
+
+- name: Get Snapshots from restic repo
+  hosts: localhost
+  vars_prompt:
+    - name: restic_pw
+      prompt: "Enter Backup PW"
+      private: no
+  tasks:
+    - set_fact:
+        restic_pw: "{{restic_pw}}"
+        restic_repo: "/media/{{ansible_user_id}}/BACKUP_HOME"
+    - name: "Show Snapshots"
+      environment:
+        RESTIC_PASSWORD: "{{ restic_pw }}"
+        RESTIC_REPOSITORY: "{{ restic_repo }}"
+      command: "restic snapshots"
+      register: restic_snapshots
+    - name: "Show snapshots"
+      debug:
+        msg: "{{restic_snapshots.stdout_lines}}"
+
+- name: Restore files from restic_includes file
+  hosts: localhost
+  vars_prompt:
+    - name: restic_snapshot_id
+      prompt: "Gimme Snapshot ID"
+      private: no
+  tasks:
+    - set_fact:
+        restic_target: "/"
+    - name: "Ouput"
+      debug:
+        msg: "{{restic_snapshot_id}} {{restic_pw}}"
+    - name: "Restore"
+      environment:
+        RESTIC_PASSWORD: "{{ restic_pw }}"
+        RESTIC_REPOSITORY: "{{ restic_repo }}"
+      command: "restic restore {{restic_snapshot_id}} --target {{restic_target}} --include {{item}}"
+      with_items:  "{{ lookup('file', './restic_includes').splitlines() }}"
+
+
+
+
+
