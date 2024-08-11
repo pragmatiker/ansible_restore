@@ -11,6 +11,7 @@
           - curl
           - keepassxc
           - network-manager-openvpn
+          - nfs-commen
           - restic
           - scdaemon
           - vim
